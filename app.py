@@ -127,7 +127,7 @@ def main():
 
 
 
-     elif menu == "Tambah Stok":
+        elif menu == "Tambah Stok":
             st.header("📥 Tambah Stok Produk")
             df = load_data()
             if df.empty:
