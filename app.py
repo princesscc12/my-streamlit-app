@@ -29,64 +29,81 @@ def main():
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    if menu == "Lihat Produk":
-        st.header("📦 Daftar Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            st.write("Klik 'Lihat' untuk melihat gambar produk.")
-            st.divider()
+if menu == "Lihat Produk":
+    st.header("📦 Daftar Produk")
+    df = load_data()
+    if df.empty:
+        st.warning("Belum ada produk.")
+    else:
+        st.write("Klik 'Lihat' untuk melihat gambar produk.")
+        st.divider()
 
-            if 'selected_image' not in st.session_state:
-                st.session_state.selected_image = None
-                st.session_state.selected_caption = None
+        if 'selected_image' not in st.session_state:
+            st.session_state.selected_image = None
+            st.session_state.selected_caption = None
 
-            with st.container():
-                st.markdown(
-                    """
-                    <div style="border: 2px solid #ccc; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
-                    """, unsafe_allow_html=True)
+        st.markdown("### 📋 Tabel Produk")
+        with st.container():
+            st.markdown("""
+                <div style="border:2px solid #ccc; padding:15px; border-radius:10px;">
+                    <table style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color:#f2f2f2;">
+                                <th style="text-align:left; padding:8px;">No</th>
+                                <th style="text-align:left; padding:8px;">Nama Produk</th>
+                                <th style="text-align:left; padding:8px;">Lihat Produk</th>
+                                <th style="text-align:left; padding:8px;">Stok</th>
+                                <th style="text-align:left; padding:8px;">Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            """, unsafe_allow_html=True)
 
-                # Header kolom
-                col0, col1, col2, col3, col4 = st.columns([0.5, 3, 2, 2, 2])
-                col0.markdown("**No**")
-                col1.markdown("**Nama Produk**")
-                col2.markdown("**Lihat Produk**")
-                col3.markdown("**Stok**")
-                col4.markdown("**Harga**")
+            for idx, row in df.iterrows():
+                nama_produk = row['Nama_Product']
+                harga = f"Rp{int(row['Harga']):,}"
+                jumlah = row['Kuantitas']
+                lihat_key = f"lihat_btn_{idx}"
 
-                for idx, row in df.iterrows():
-                    col0, col1, col2, col3, col4 = st.columns([0.5, 3, 2, 2, 2])
-                    col0.write(f"{idx+1}")
-                    col1.write(row["Nama_Product"])
-                    with col2:
-                        if st.button("Lihat", key=f"lihat_{idx}"):
-                            nama_produk = row['Nama_Product']
-                            nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
-                            png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
+                st.markdown(f"""
+                    <tr>
+                        <td style="padding:8px;">{idx+1}</td>
+                        <td style="padding:8px;">{nama_produk}</td>
+                        <td style="padding:8px;">[Lihat](#{lihat_key})</td>
+                        <td style="padding:8px;">{jumlah}</td>
+                        <td style="padding:8px;">{harga}</td>
+                    </tr>
+                """, unsafe_allow_html=True)
 
-                            if os.path.exists(jpg_path):
-                                st.session_state.selected_image = jpg_path
-                                st.session_state.selected_caption = nama_produk
-                            elif os.path.exists(png_path):
-                                st.session_state.selected_image = png_path
-                                st.session_state.selected_caption = nama_produk
-                            else:
-                                st.session_state.selected_image = None
-                                st.session_state.selected_caption = "Gambar tidak ditemukan"
+            st.markdown("""
+                        </tbody>
+                    </table>
+                </div>
+            """, unsafe_allow_html=True)
 
-                    col3.write(row["Kuantitas"])
-                    col4.write(f"Rp{int(row['Harga']):,}")
+        # Tombol Lihat Produk (asli)
+        for idx, row in df.iterrows():
+            nama_produk = row['Nama_Product']
+            lihat_key = f"lihat_{idx}"
+            if st.button(f"Lihat {nama_produk}", key=lihat_key):
+                nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
+                jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
+                png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
+                if os.path.exists(jpg_path):
+                    st.session_state.selected_image = jpg_path
+                    st.session_state.selected_caption = nama_produk
+                elif os.path.exists(png_path):
+                    st.session_state.selected_image = png_path
+                    st.session_state.selected_caption = nama_produk
+                else:
+                    st.session_state.selected_image = None
+                    st.session_state.selected_caption = "Gambar tidak ditemukan"
 
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            if st.session_state.selected_image:
-                with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
-                    st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
-            elif st.session_state.selected_caption == "Gambar tidak ditemukan":
-                st.error("Gambar tidak ditemukan.")
+        if st.session_state.selected_image:
+            with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
+                st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
+        elif st.session_state.selected_caption == "Gambar tidak ditemukan":
+            st.error("Gambar tidak ditemukan.")
 
     elif menu == "Tambah Stok":
         st.header("📥 Tambah Stok Produk")
