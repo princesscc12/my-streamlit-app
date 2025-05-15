@@ -29,93 +29,10 @@ def main():
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    if menu == "Lihat Produk":
-        st.header("📦 Daftar Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            st.write("Klik 'Lihat' untuk melihat gambar produk.")
-            st.divider()
+    df = load_data()
 
-            if 'selected_image' not in st.session_state:
-                st.session_state.selected_image = None
-                st.session_state.selected_caption = None
-
-            container = st.container()
-            with container:
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                col1.markdown("**Nama Produk**")
-                col2.markdown("**Lihat Produk**")
-                col3.markdown("**Stok**")
-                col4.markdown("**Harga**")
-
-                for idx, row in df.iterrows():
-                    col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                    col1.write(row["Nama_Product"])
-                    with col2:
-                        if st.button("Lihat", key=f"lihat_{idx}"):
-                            nama_produk = row['Nama_Product']
-                            nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
-                            png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
-
-                            if os.path.exists(jpg_path):
-                                st.session_state.selected_image = jpg_path
-                                st.session_state.selected_caption = nama_produk
-                            elif os.path.exists(png_path):
-                                st.session_state.selected_image = png_path
-                                st.session_state.selected_caption = nama_produk
-                            else:
-                                st.session_state.selected_image = None
-                                st.session_state.selected_caption = "Gambar tidak ditemukan"
-
-                    col3.write(row["Kuantitas"])
-                    col4.write(f"Rp{int(row['Harga']):,}")
-
-            if st.session_state.selected_image:
-                with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
-                    st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
-            elif st.session_state.selected_caption == "Gambar tidak ditemukan":
-                st.error("Gambar tidak ditemukan.")
-
-    elif menu == "Tambah Stok":
-        st.header("📥 Tambah Stok Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            stok_sekarang = df[df['Nama_Product'] == produk]['Kuantitas'].values[0]
-            st.info(f"Stok saat ini: {stok_sekarang}")
-            jumlah = st.number_input("Jumlah stok yang ingin ditambahkan", min_value=1, step=1)
-            if st.button("Tambah Stok"):
-                idx = df[df['Nama_Product'] == produk].index[0]
-                df.at[idx, 'Kuantitas'] = int(df.at[idx, 'Kuantitas']) + jumlah
-                save_data(df)
-                st.success(f"Stok produk '{produk}' berhasil ditambah sebanyak {jumlah}.")
-                st.rerun()
-
-    elif menu == "Update Harga":
-        st.header("💸 Update Harga Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            harga_sekarang = df[df['Nama_Product'] == produk]['Harga'].values[0]
-            st.info(f"Harga saat ini: Rp{harga_sekarang:,}")
-            harga_baru = st.number_input("Harga baru (Rp)", min_value=0, step=1000)
-            if st.button("Update Harga"):
-                idx = df[df['Nama_Product'] == produk].index[0]
-                df.at[idx, 'Harga'] = harga_baru
-                save_data(df)
-                st.success(f"Harga produk '{produk}' berhasil diupdate ke Rp{harga_baru:,}.")
-                st.rerun()
-
-    elif menu == "Kasir":
+    if menu == "Kasir":
         st.header("🧾 Kasir")
-        df = load_data()
         if df.empty:
             st.warning("Belum ada produk.")
         else:
@@ -123,70 +40,82 @@ def main():
             idx = df[df['Nama_Product'] == produk].index[0]
             stok = int(df.at[idx, 'Kuantitas'])
             st.write(f"Stok tersedia: {stok}")
-            jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
 
-            if st.button("Tambah ke Keranjang"):
-                if jumlah_beli <= stok:
+            if stok > 0:
+                jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
+                if st.button("Tambah ke Keranjang"):
                     st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
                     df.at[idx, 'Kuantitas'] = stok - jumlah_beli
                     save_data(df)
                     st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
                     st.rerun()
-                else:
-                    st.error("Jumlah beli melebihi stok.")
+            else:
+                st.info("Stok habis, tidak bisa menambahkan ke keranjang.")
 
             if st.session_state.cart:
                 st.subheader("🛍️ Keranjang Belanja")
                 total_bayar = 0
-                for produk_keranjang, jumlah in st.session_state.cart.items():
+
+                for produk_keranjang, jumlah in list(st.session_state.cart.items()):
                     harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
                     subtotal = harga * jumlah
-                    st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
+                    col1, col2, col3 = st.columns([3, 2, 2])
+                    col1.write(f"{produk_keranjang} @ Rp{harga:,}")
+                    with col2:
+                        new_jumlah = st.number_input(
+                            f"Jumlah '{produk_keranjang}'", min_value=1,
+                            value=jumlah, key=f"edit_{produk_keranjang}"
+                        )
+                    with col3:
+                        if st.button("Update", key=f"update_{produk_keranjang}"):
+                            stok_sisa = int(df[df['Nama_Product'] == produk_keranjang]['Kuantitas'].values[0])
+                            total_kembali = jumlah  # jumlah sebelum diubah
+                            perubahan = new_jumlah - jumlah
+                            if perubahan > stok_sisa:
+                                st.warning(f"Stok tidak mencukupi untuk menambah {perubahan} item.")
+                            else:
+                                df.loc[df['Nama_Product'] == produk_keranjang, 'Kuantitas'] -= perubahan
+                                save_data(df)
+                                st.session_state.cart[produk_keranjang] = new_jumlah
+                                st.success(f"Jumlah '{produk_keranjang}' diperbarui menjadi {new_jumlah}.")
+                                st.rerun()
+
+                    st.write(f"{jumlah} x Rp{harga:,} = Rp{subtotal:,}")
                     total_bayar += subtotal
+
                 st.write(f"**Total bayar: Rp{total_bayar:,}**")
 
-            if st.button("Reset Keranjang"):
-                st.session_state.cart = {}
-                st.success("Keranjang berhasil dibersihkan.")
-                st.rerun()
+                if st.button("Reset Keranjang"):
+                    st.session_state.cart = {}
+                    st.success("Keranjang berhasil dibersihkan.")
+                    st.rerun()
 
     elif menu == "Lihat Struk":
-        df = load_data()
+        st.header("🧾 Struk Pembelian")
         if not st.session_state.cart:
             st.info("Keranjang kosong.")
         else:
-            st.header("🧾 Struk Pembelian (Edit & Checkout)")
             total_bayar = 0
-            updated_cart = {}
-
-            for produk, jumlah in st.session_state.cart.items():
-                col1, col2 = st.columns([3, 2])
-                col1.write(f"**{produk}**")
-                new_qty = col2.number_input(f"Jumlah", min_value=1, value=jumlah, key=f"qty_{produk}")
-                updated_cart[produk] = new_qty
-
-            st.session_state.cart = updated_cart
-
-            st.divider()
-            total_bayar = 0
-            for produk, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk, 'Harga'].values[0]
+            for produk_keranjang, jumlah in st.session_state.cart.items():
+                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
                 subtotal = harga * jumlah
+                st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
                 total_bayar += subtotal
-                st.write(f"{produk} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
+            st.write(f"**Total bayar: Rp{total_bayar:,}**")
 
-            st.write(f"### Total Bayar: Rp{total_bayar:,}")
-
-            # Generate PDF saat checkout
+            # Auto generate and download PDF on button click
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
             pdf.cell(200, 10, txt="Struk Pembelian Ptoirmart", ln=True, align='C')
             pdf.ln(10)
-            for produk, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk, 'Harga'].values[0]
+
+            for produk_keranjang, jumlah in st.session_state.cart.items():
+                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
                 subtotal = harga * jumlah
-                pdf.cell(200, 10, txt=f"{produk} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}", ln=True)
+                line = f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}"
+                pdf.cell(200, 10, txt=line, ln=True)
+
             pdf.ln(10)
             pdf.set_font("Arial", "B", size=12)
             pdf.cell(200, 10, txt=f"Total Bayar: Rp{total_bayar:,}", ln=True)
@@ -195,10 +124,12 @@ def main():
             pdf.output(pdf_path)
 
             with open(pdf_path, "rb") as f:
-                if st.download_button("Checkout", f, file_name="struk_belanja.pdf", mime="application/pdf"):
-                    st.session_state.cart = {}
-                    st.success("Checkout berhasil. Struk telah diunduh.")
-                    st.rerun()
+                st.download_button(
+                    label="Checkout",
+                    data=f,
+                    file_name="struk_belanja.pdf",
+                    mime="application/pdf"
+                )
 
 if __name__ == "__main__":
     main()
