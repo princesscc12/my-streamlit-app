@@ -29,55 +29,76 @@ def main():
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    if menu == "Lihat Produk":
-        st.header("📦 Daftar Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            st.write("Klik 'Lihat' untuk melihat gambar produk.")
-            st.divider()
+ if menu == "Lihat Produk":
+    st.header("📦 Daftar Produk")
+    df = load_data()
+    if df.empty:
+        st.warning("Belum ada produk.")
+    else:
+        st.write("Klik 'Lihat' untuk melihat gambar produk.")
+        st.divider()
 
-            if 'selected_image' not in st.session_state:
-                st.session_state.selected_image = None
-                st.session_state.selected_caption = None
+        if 'selected_image' not in st.session_state:
+            st.session_state.selected_image = None
+            st.session_state.selected_caption = None
 
-            container = st.container()
-            with container:
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                col1.markdown("**Nama Produk**")
-                col2.markdown("**Lihat Produk**")
-                col3.markdown("**Stok**")
-                col4.markdown("**Harga**")
+        # Styling border container dengan CSS
+        st.markdown(
+            """
+            <style>
+            .produk-container {
+                border: 2px solid #4CAF50;
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
 
-                for idx, row in df.iterrows():
-                    col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                    col1.write(row["Nama_Product"])
-                    with col2:
-                        if st.button("Lihat", key=f"lihat_{idx}"):
-                            nama_produk = row['Nama_Product']
-                            nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
-                            png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
+        st.markdown('<div class="produk-container">', unsafe_allow_html=True)
 
-                            if os.path.exists(jpg_path):
-                                st.session_state.selected_image = jpg_path
-                                st.session_state.selected_caption = nama_produk
-                            elif os.path.exists(png_path):
-                                st.session_state.selected_image = png_path
-                                st.session_state.selected_caption = nama_produk
-                            else:
-                                st.session_state.selected_image = None
-                                st.session_state.selected_caption = "Gambar tidak ditemukan"
+        # Header tabel dengan nomor urut
+        col_no, col1, col2, col3, col4 = st.columns([1, 3, 2, 2, 2])
+        col_no.markdown("**No.**")
+        col1.markdown("**Nama Produk**")
+        col2.markdown("**Lihat Produk**")
+        col3.markdown("**Stok**")
+        col4.markdown("**Harga**")
 
-                    col3.write(row["Kuantitas"])
-                    col4.write(f"Rp{int(row['Harga']):,}")
+        for idx, row in df.iterrows():
+            col_no, col1, col2, col3, col4 = st.columns([1, 3, 2, 2, 2])
+            col_no.write(idx + 1)  # nomor urut mulai dari 1
+            col1.write(row["Nama_Product"])
+            with col2:
+                if st.button("Lihat", key=f"lihat_{idx}"):
+                    nama_produk = row['Nama_Product']
+                    nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
+                    jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
+                    png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
 
-            if st.session_state.selected_image:
-                with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
-                    st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
-            elif st.session_state.selected_caption == "Gambar tidak ditemukan":
-                st.error("Gambar tidak ditemukan.")
+                    if os.path.exists(jpg_path):
+                        st.session_state.selected_image = jpg_path
+                        st.session_state.selected_caption = nama_produk
+                    elif os.path.exists(png_path):
+                        st.session_state.selected_image = png_path
+                        st.session_state.selected_caption = nama_produk
+                    else:
+                        st.session_state.selected_image = None
+                        st.session_state.selected_caption = "Gambar tidak ditemukan"
+
+            col3.write(row["Kuantitas"])
+            col4.write(f"Rp{int(row['Harga']):,}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if st.session_state.selected_image:
+            with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
+                st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
+        elif st.session_state.selected_caption == "Gambar tidak ditemukan":
+            st.error("Gambar tidak ditemukan.")
+
 
     elif menu == "Tambah Stok":
         st.header("📥 Tambah Stok Produk")
