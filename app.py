@@ -29,7 +29,7 @@ def main():
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
-    if menu == "Lihat Produk":
+ if menu == "Lihat Produk":
     st.header("📦 Daftar Produk")
     df = load_data()
     if df.empty:
@@ -42,60 +42,36 @@ def main():
             st.session_state.selected_image = None
             st.session_state.selected_caption = None
 
-        # CSS untuk membungkus tabel dengan border kotak
+        # Styling border container dengan CSS
         st.markdown(
             """
             <style>
             .produk-container {
                 border: 2px solid #4CAF50;
                 border-radius: 8px;
-                padding: 16px;
+                padding: 12px;
                 margin-bottom: 20px;
-                background-color: #f9f9f9;
             }
-            .produk-row {
-                display: flex;
-                align-items: center;
-                padding: 6px 0;
-                border-bottom: 1px solid #ddd;
-            }
-            .produk-row:last-child {
-                border-bottom: none;
-            }
-            .col-no { width: 40px; font-weight: bold; }
-            .col-nama { flex: 3; font-weight: bold; }
-            .col-lihat { flex: 2; }
-            .col-stok { flex: 2; }
-            .col-harga { flex: 2; }
             </style>
             """,
             unsafe_allow_html=True,
         )
 
-        # Mulai container kotak
         st.markdown('<div class="produk-container">', unsafe_allow_html=True)
 
-        # Header tabel manual dengan flexbox
-        st.markdown(
-            """
-            <div class="produk-row">
-                <div class="col-no">No.</div>
-                <div class="col-nama">Nama Produk</div>
-                <div class="col-lihat">Lihat Produk</div>
-                <div class="col-stok">Stok</div>
-                <div class="col-harga">Harga</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Header tabel dengan nomor urut
+        col_no, col1, col2, col3, col4 = st.columns([1, 3, 2, 2, 2])
+        col_no.markdown("**No.**")
+        col1.markdown("**Nama Produk**")
+        col2.markdown("**Lihat Produk**")
+        col3.markdown("**Stok**")
+        col4.markdown("**Harga**")
 
-        # Untuk setiap produk, tampilkan baris
         for idx, row in df.iterrows():
-            # Kita buat button lihat di Streamlit tapi untuk styling kita gunakan div fleksibel
-            col1, col2, col3, col4, col5 = st.columns([1, 3, 2, 2, 2])
-            col1.markdown(f"**{idx + 1}**")
-            col2.write(row["Nama_Product"])
-            with col3:
+            col_no, col1, col2, col3, col4 = st.columns([1, 3, 2, 2, 2])
+            col_no.write(idx + 1)  # nomor urut mulai dari 1
+            col1.write(row["Nama_Product"])
+            with col2:
                 if st.button("Lihat", key=f"lihat_{idx}"):
                     nama_produk = row['Nama_Product']
                     nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
@@ -112,13 +88,11 @@ def main():
                         st.session_state.selected_image = None
                         st.session_state.selected_caption = "Gambar tidak ditemukan"
 
-            col4.write(row["Kuantitas"])
-            col5.write(f"Rp{int(row['Harga']):,}")
+            col3.write(row["Kuantitas"])
+            col4.write(f"Rp{int(row['Harga']):,}")
 
-        # Tutup container kotak
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Tampilkan gambar jika ada yang dipilih
         if st.session_state.selected_image:
             with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
                 st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
