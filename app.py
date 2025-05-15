@@ -30,8 +30,8 @@ def main():
         st.session_state.cart = {}
 
     if menu == "Lihat Produk":
-    st.header("📦 Daftar Produk")
-    df = load_data()
+        st.header("📦 Daftar Produk")
+        df = load_data()
     if df.empty:
         st.warning("Belum ada produk.")
     else:
