@@ -104,7 +104,7 @@ if menu == "Lihat Produk":
                 st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
         elif st.session_state.selected_caption == "Gambar tidak ditemukan":
             st.error("Gambar tidak ditemukan.")
-
+        
     elif menu == "Tambah Stok":
         st.header("📥 Tambah Stok Produk")
         df = load_data()
