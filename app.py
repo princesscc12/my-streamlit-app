@@ -124,25 +124,19 @@ def main():
             stok = int(df.at[idx, 'Kuantitas'])
             harga = int(df.at[idx, 'Harga'])
 
-            # Tampilkan info stok dan harga
             st.write(f"📦 **Stok tersedia:** {stok}")
             st.write(f"💰 **Harga per item:** Rp{harga:,}")
 
-            # Cegah error saat stok habis
             if stok == 0:
                 st.warning("Stok produk ini habis, tidak bisa dibeli.")
             else:
                 jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
-
                 if st.button("Tambah ke Keranjang"):
-                    if jumlah_beli <= stok:
-                        st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
-                        df.at[idx, 'Kuantitas'] = stok - jumlah_beli
-                        save_data(df)
-                        st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
-                        st.rerun()
-                    else:
-                        st.error("Jumlah beli melebihi stok.")
+                    st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
+                    df.at[idx, 'Kuantitas'] = stok - jumlah_beli
+                    save_data(df)
+                    st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
+                    st.rerun()
 
             if st.session_state.cart:
                 st.subheader("🛍️ Keranjang Belanja")
@@ -163,8 +157,6 @@ def main():
                 st.session_state.cart = {}
                 st.success("Keranjang berhasil dibersihkan dan stok dikembalikan.")
                 st.rerun()
-
-
 
     elif menu == "Lihat Struk":
         df = load_data()
