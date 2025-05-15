@@ -155,9 +155,15 @@ def main():
                 st.write(f"**Total bayar: Rp{total_bayar:,}**")
 
             if st.button("Reset Keranjang"):
+                df = load_data()
+                for produk_keranjang, jumlah in st.session_state.cart.items():
+                    idx = df[df['Nama_Product'] == produk_keranjang].index[0]
+                    df.at[idx, 'Kuantitas'] += jumlah  # Kembalikan stok
+                save_data(df)
                 st.session_state.cart = {}
-                st.success("Keranjang berhasil dibersihkan.")
+                st.success("Keranjang berhasil dibersihkan dan stok dikembalikan.")
                 st.rerun()
+
 
 
     elif menu == "Lihat Struk":
