@@ -214,8 +214,8 @@ def main():
 
 
 
-        elif menu == "Lihat Struk":
-            df = load_data()
+            elif menu == "Lihat Struk":
+                df = load_data()
         if not st.session_state.cart:
             st.info("Keranjang kosong.")
         else:
