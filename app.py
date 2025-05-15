@@ -21,7 +21,7 @@ def save_data(df):
 
 def main():
     st.set_page_config(layout="wide")
-    st.title("🛒 Ptoirmart Web Versi Streamlit")
+    st.title("🛒 Ptoirmart Web")
 
     menu = st.sidebar.selectbox("Menu", [
         "Lihat Produk", "Tambah Stok", "Update Harga", "Kasir", "Lihat Struk"])
