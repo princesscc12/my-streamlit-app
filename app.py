@@ -21,7 +21,7 @@ def save_data(df):
 
 def main():
     st.set_page_config(layout="wide")
-    st.title("🛒 Ptoirmart Web")
+    st.title("🛒 PTOIR MART")
 
     menu = st.sidebar.selectbox("Menu", [
         "Lihat Produk", "Tambah Stok", "Update Harga", "Kasir", "Lihat Struk"])
@@ -203,7 +203,7 @@ def main():
 
                 with open(pdf_path, "rb") as f:
                     st.download_button(
-                        label="📄 Download Struk (PDF)",
+                        label="Checkout",
                         data=f,
                         file_name="struk_belanja.pdf",
                         mime="application/pdf"
