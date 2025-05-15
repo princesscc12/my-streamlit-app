@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from fpdf import FPDF
 
 CSV_PATH = 'produkMart.csv'
 GAMBAR_FOLDER = 'images'
@@ -56,7 +57,7 @@ def main():
                         if st.button("Lihat", key=f"lihat_{idx}"):
                             nama_produk = row['Nama_Product']
                             nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
+                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
                             png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
 
                             if os.path.exists(jpg_path):
@@ -156,12 +157,57 @@ def main():
         else:
             st.header("🧾 Struk Pembelian")
             total_bayar = 0
+
             for produk_keranjang, jumlah in st.session_state.cart.items():
                 harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
                 subtotal = harga * jumlah
-                st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
+
+                st.write(f"**{produk_keranjang}**")
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    new_jumlah = st.number_input(f"Ubah jumlah untuk '{produk_keranjang}'", min_value=1, value=jumlah, key=f"edit_{produk_keranjang}")
+                with col2:
+                    if st.button("Update", key=f"update_{produk_keranjang}"):
+                        stok_awal = int(df.loc[df['Nama_Product'] == produk_keranjang, 'Kuantitas'].values[0])
+                        perubahan = new_jumlah - jumlah
+                        df.loc[df['Nama_Product'] == produk_keranjang, 'Kuantitas'] -= perubahan
+                        save_data(df)
+                        st.session_state.cart[produk_keranjang] = new_jumlah
+                        st.success(f"Jumlah '{produk_keranjang}' diperbarui menjadi {new_jumlah}.")
+                        st.rerun()
+
+                st.write(f"{jumlah} x Rp{harga:,} = Rp{subtotal:,}")
                 total_bayar += subtotal
+
             st.write(f"**Total bayar: Rp{total_bayar:,}**")
+
+            if st.button("Download PDF Struk"):
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                pdf.cell(200, 10, txt="Struk Pembelian Ptoirmart", ln=True, align='C')
+                pdf.ln(10)
+
+                for produk_keranjang, jumlah in st.session_state.cart.items():
+                    harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
+                    subtotal = harga * jumlah
+                    line = f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}"
+                    pdf.cell(200, 10, txt=line, ln=True)
+
+                pdf.ln(10)
+                pdf.set_font("Arial", "B", size=12)
+                pdf.cell(200, 10, txt=f"Total Bayar: Rp{total_bayar:,}", ln=True)
+
+                pdf_path = "struk_belanja.pdf"
+                pdf.output(pdf_path)
+
+                with open(pdf_path, "rb") as f:
+                    st.download_button(
+                        label="📄 Download Struk (PDF)",
+                        data=f,
+                        file_name="struk_belanja.pdf",
+                        mime="application/pdf"
+                    )
 
 if __name__ == "__main__":
     main()
