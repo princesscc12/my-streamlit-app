@@ -100,7 +100,6 @@ def main():
             st.error("Gambar tidak ditemukan.")
 
 
-
     elif menu == "Tambah Stok":
         st.header("📥 Tambah Stok Produk")
         df = load_data()
