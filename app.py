@@ -57,7 +57,7 @@ def main():
                         if st.button("Lihat", key=f"lihat_{idx}"):
                             nama_produk = row['Nama_Product']
                             nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
+                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
                             png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
 
                             if os.path.exists(jpg_path):
