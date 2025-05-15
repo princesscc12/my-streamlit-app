@@ -131,7 +131,7 @@ def main():
             st.header("📥 Tambah Stok Produk")
             df = load_data()
             if df.empty:
-            st.warning("Belum ada produk.")
+                st.warning("Belum ada produk.")
         else:
             produk = st.selectbox("Pilih produk", df['Nama_Product'])
             stok_sekarang = df[df['Nama_Product'] == produk]['Kuantitas'].values[0]
@@ -144,9 +144,9 @@ def main():
                 st.success(f"Stok produk '{produk}' berhasil ditambah sebanyak {jumlah}.")
                 st.rerun()
 
-    elif menu == "Update Harga":
-        st.header("💸 Update Harga Produk")
-        df = load_data()
+        elif menu == "Update Harga":
+            st.header("💸 Update Harga Produk")
+            df = load_data()
         if df.empty:
             st.warning("Belum ada produk.")
         else:
