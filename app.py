@@ -127,10 +127,10 @@ def main():
 
 
 
-    elif menu == "Tambah Stok":
-        st.header("📥 Tambah Stok Produk")
-        df = load_data()
-        if df.empty:
+     elif menu == "Tambah Stok":
+            st.header("📥 Tambah Stok Produk")
+            df = load_data()
+            if df.empty:
             st.warning("Belum ada produk.")
         else:
             produk = st.selectbox("Pilih produk", df['Nama_Product'])
