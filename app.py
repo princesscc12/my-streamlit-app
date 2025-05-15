@@ -29,33 +29,33 @@ def main():
     if "cart" not in st.session_state:
         st.session_state.cart = {}
 
- if menu == "Lihat Produk":
-    st.header("📦 Daftar Produk")
-    df = load_data()
-    if df.empty:
-        st.warning("Belum ada produk.")
-    else:
-        st.write("Klik 'Lihat' untuk melihat gambar produk.")
-        st.divider()
+    if menu == "Lihat Produk":
+        st.header("📦 Daftar Produk")
+        df = load_data()
+        if df.empty:
+            st.warning("Belum ada produk.")
+        else:
+            st.write("Klik 'Lihat' untuk melihat gambar produk.")
+            st.divider()
 
-        if 'selected_image' not in st.session_state:
-            st.session_state.selected_image = None
-            st.session_state.selected_caption = None
+            if 'selected_image' not in st.session_state:
+                st.session_state.selected_image = None
+                st.session_state.selected_caption = None
 
-        # Styling border container dengan CSS
-        st.markdown(
-            """
-            <style>
-            .produk-container {
-                border: 2px solid #4CAF50;
-                border-radius: 8px;
-                padding: 12px;
-                margin-bottom: 20px;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+            # Styling border container dengan CSS
+            st.markdown(
+                """
+                <style>
+                .produk-container {
+                    border: 2px solid #4CAF50;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin-bottom: 20px;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
 
         st.markdown('<div class="produk-container">', unsafe_allow_html=True)
 
@@ -98,6 +98,7 @@ def main():
                 st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
         elif st.session_state.selected_caption == "Gambar tidak ditemukan":
             st.error("Gambar tidak ditemukan.")
+
 
 
     elif menu == "Tambah Stok":
