@@ -144,9 +144,9 @@ def main():
                 st.success(f"Stok produk '{produk}' berhasil ditambah sebanyak {jumlah}.")
                 st.rerun()
 
-        elif menu == "Update Harga":
-            st.header("💸 Update Harga Produk")
-            df = load_data()
+            elif menu == "Update Harga":
+                st.header("💸 Update Harga Produk")
+                df = load_data()
         if df.empty:
             st.warning("Belum ada produk.")
         else:
@@ -161,16 +161,16 @@ def main():
                 st.success(f"Harga produk '{produk}' berhasil diupdate ke Rp{harga_baru:,}.")
                 st.rerun()
 
-    elif menu == "Kasir":
-        st.header("🧾 Kasir")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            idx = df[df['Nama_Product'] == produk].index[0]
-            stok = int(df.at[idx, 'Kuantitas'])
-            harga = int(df.at[idx, 'Harga'])
+            elif menu == "Kasir":
+                st.header("🧾 Kasir")
+                df = load_data()
+            if df.empty:
+                st.warning("Belum ada produk.")
+            else:
+                produk = st.selectbox("Pilih produk", df['Nama_Product'])
+                idx = df[df['Nama_Product'] == produk].index[0]
+                stok = int(df.at[idx, 'Kuantitas'])
+                harga = int(df.at[idx, 'Harga'])
 
             # Tampilkan info stok dan harga
             st.write(f"📦 **Stok tersedia:** {stok}")
@@ -214,8 +214,8 @@ def main():
 
 
 
-    elif menu == "Lihat Struk":
-        df = load_data()
+        elif menu == "Lihat Struk":
+            df = load_data()
         if not st.session_state.cart:
             st.info("Keranjang kosong.")
         else:
