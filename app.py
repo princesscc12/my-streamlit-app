@@ -42,16 +42,23 @@ def main():
                 st.session_state.selected_image = None
                 st.session_state.selected_caption = None
 
-            container = st.container()
-            with container:
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+            with st.container():
+                st.markdown(
+                    """
+                    <div style="border: 2px solid #ccc; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+                    """, unsafe_allow_html=True)
+
+                # Header kolom
+                col0, col1, col2, col3, col4 = st.columns([0.5, 3, 2, 2, 2])
+                col0.markdown("**No**")
                 col1.markdown("**Nama Produk**")
                 col2.markdown("**Lihat Produk**")
                 col3.markdown("**Stok**")
                 col4.markdown("**Harga**")
 
                 for idx, row in df.iterrows():
-                    col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+                    col0, col1, col2, col3, col4 = st.columns([0.5, 3, 2, 2, 2])
+                    col0.write(f"{idx+1}")
                     col1.write(row["Nama_Product"])
                     with col2:
                         if st.button("Lihat", key=f"lihat_{idx}"):
@@ -72,6 +79,8 @@ def main():
 
                     col3.write(row["Kuantitas"])
                     col4.write(f"Rp{int(row['Harga']):,}")
+
+                st.markdown("</div>", unsafe_allow_html=True)
 
             if st.session_state.selected_image:
                 with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
