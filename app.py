@@ -155,30 +155,38 @@ def main():
         if not st.session_state.cart:
             st.info("Keranjang kosong.")
         else:
-            st.header("🧾 Struk Pembelian")
+            st.header("🧾 Struk Pembelian (Edit & Checkout)")
             total_bayar = 0
+            updated_cart = {}
 
-            for produk_keranjang, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
+            for produk, jumlah in st.session_state.cart.items():
+                col1, col2 = st.columns([3, 2])
+                col1.write(f"**{produk}**")
+                new_qty = col2.number_input(f"Jumlah", min_value=1, value=jumlah, key=f"qty_{produk}")
+                updated_cart[produk] = new_qty
+
+            st.session_state.cart = updated_cart
+
+            st.divider()
+            total_bayar = 0
+            for produk, jumlah in st.session_state.cart.items():
+                harga = df.loc[df['Nama_Product'] == produk, 'Harga'].values[0]
                 subtotal = harga * jumlah
-                st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
                 total_bayar += subtotal
+                st.write(f"{produk} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
 
-            st.write(f"**Total bayar: Rp{total_bayar:,}**")
+            st.write(f"### Total Bayar: Rp{total_bayar:,}")
 
-            # Generate PDF otomatis
+            # Generate PDF saat checkout
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
             pdf.cell(200, 10, txt="Struk Pembelian Ptoirmart", ln=True, align='C')
             pdf.ln(10)
-
-            for produk_keranjang, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
+            for produk, jumlah in st.session_state.cart.items():
+                harga = df.loc[df['Nama_Product'] == produk, 'Harga'].values[0]
                 subtotal = harga * jumlah
-                line = f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}"
-                pdf.cell(200, 10, txt=line, ln=True)
-
+                pdf.cell(200, 10, txt=f"{produk} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}", ln=True)
             pdf.ln(10)
             pdf.set_font("Arial", "B", size=12)
             pdf.cell(200, 10, txt=f"Total Bayar: Rp{total_bayar:,}", ln=True)
@@ -187,12 +195,10 @@ def main():
             pdf.output(pdf_path)
 
             with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="Checkout",
-                    data=f,
-                    file_name="struk_belanja.pdf",
-                    mime="application/pdf"
-                )
+                if st.download_button("Checkout", f, file_name="struk_belanja.pdf", mime="application/pdf"):
+                    st.session_state.cart = {}
+                    st.success("Checkout berhasil. Struk telah diunduh.")
+                    st.rerun()
 
 if __name__ == "__main__":
     main()
