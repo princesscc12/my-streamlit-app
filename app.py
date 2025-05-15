@@ -122,24 +122,35 @@ def main():
             produk = st.selectbox("Pilih produk", df['Nama_Product'])
             idx = df[df['Nama_Product'] == produk].index[0]
             stok = int(df.at[idx, 'Kuantitas'])
-            if stok > 0:
-                jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
-                if st.button("Tambah ke Keranjang"):
-                    st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
-                    df.at[idx, 'Kuantitas'] = stok - jumlah_beli
-                    save_data(df)
-                    st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
-                    st.rerun()
+            harga = int(df.at[idx, 'Harga'])
+
+            # Tampilkan info stok dan harga
+            st.write(f"📦 **Stok tersedia:** {stok}")
+            st.write(f"💰 **Harga per item:** Rp{harga:,}")
+
+            # Cegah error saat stok habis
+            if stok == 0:
+                st.warning("Stok produk ini habis, tidak bisa dibeli.")
             else:
-                st.warning("Stok habis untuk produk ini.")
+                jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
+
+                if st.button("Tambah ke Keranjang"):
+                    if jumlah_beli <= stok:
+                        st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
+                        df.at[idx, 'Kuantitas'] = stok - jumlah_beli
+                        save_data(df)
+                        st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
+                        st.rerun()
+                    else:
+                        st.error("Jumlah beli melebihi stok.")
 
             if st.session_state.cart:
                 st.subheader("🛍️ Keranjang Belanja")
                 total_bayar = 0
                 for produk_keranjang, jumlah in st.session_state.cart.items():
-                    harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
-                    subtotal = harga * jumlah
-                    st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}")
+                    harga_item = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
+                    subtotal = harga_item * jumlah
+                    st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga_item:,} = Rp{subtotal:,}")
                     total_bayar += subtotal
                 st.write(f"**Total bayar: Rp{total_bayar:,}**")
 
@@ -147,6 +158,7 @@ def main():
                 st.session_state.cart = {}
                 st.success("Keranjang berhasil dibersihkan.")
                 st.rerun()
+
 
     elif menu == "Lihat Struk":
         df = load_data()
