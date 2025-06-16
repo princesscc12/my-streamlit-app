@@ -1,225 +1,193 @@
-import streamlit as st
-import pandas as pd
 import os
-from fpdf import FPDF
+import streamlit as st
+import requests
+import pandas as pd
+from datetime import datetime
+import base64
 
-CSV_PATH = 'produkMart.csv'
-GAMBAR_FOLDER = 'images'
+API_KEY = "969f9fd68e54e135160a7f0e1f118155"
+anim_dir = os.path.join(os.path.dirname(__file__), "videos")
 
-def load_data():
-    if os.path.exists(CSV_PATH):
-        df = pd.read_csv(CSV_PATH, delimiter='\t')
-        df.columns = df.columns.str.strip()
-        if 'Harga (Rp)' in df.columns:
-            df.rename(columns={'Harga (Rp)': 'Harga'}, inplace=True)
-        return df
+def get_weather_data(city, unit):
+    unit_param = "metric" if unit == "Celsius" else "imperial"
+    current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units={unit_param}"
+    forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units={unit_param}"
+    try:
+        current_data = requests.get(current_url).json()
+        forecast_data = requests.get(forecast_url).json()
+    except:
+        current_data, forecast_data = {}, {}
+    return current_data, forecast_data
+
+def get_location_by_ip():
+    try:
+        res = requests.get("http://ip-api.com/json").json()
+        return res.get("city", "Canberra")
+    except:
+        return "Canberra"
+
+def weather_icon(description):
+    desc = description.lower()
+    if 'rain' in desc:
+        return '🌧️'
+    elif 'cloud' in desc:
+        return '☁️'
+    elif 'clear' in desc:
+        return '☀️'
+    elif 'snow' in desc:
+        return '❄️'
+    elif 'storm' in desc or 'thunder' in desc:
+        return '⛈️'
     else:
-        return pd.DataFrame(columns=['Nama_Product', 'Kuantitas', 'Harga'])
+        return '🌥️'
 
-def save_data(df):
-    df.to_csv(CSV_PATH, sep='\t', index=False)
+def weather_animation(description):
+    desc = description.lower()
+    if 'rain' in desc:
+        return os.path.join(anim_dir, "hujan.gif")
+    elif 'cloud' in desc:
+        return os.path.join(anim_dir, "mendung.gif")
+    elif 'clear' in desc:
+        return os.path.join(anim_dir, "cerah.gif")
+    elif 'storm' in desc or 'thunder' in desc:
+        return os.path.join(anim_dir, "petir.gif")
+    else:
+        return os.path.join(anim_dir, "cerah.gif")
 
 def main():
-    st.set_page_config(layout="wide")
-    st.title("🛒 PTOIR MART")
+    st.set_page_config(page_title="Aplikasi Cuaca", page_icon="🌦️", layout="centered")
 
-    menu = st.sidebar.selectbox("Menu", [
-        "Lihat Produk", "Tambah Stok", "Update Harga", "Kasir", "Lihat Struk"])
+    st.markdown("""
+        <style>
+            .main {
+                background: linear-gradient(to bottom, #76b6ec, #c2dfff);
+                color: white;
+            }
+            h1, h2, h3, h4, h5, h6, p {
+                color: white !important;
+            }
+            .block-container {
+                padding-top: 2rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
-    if "cart" not in st.session_state:
-        st.session_state.cart = {}
+    st.markdown("<h1 style='text-align:center;'>🌤️ Aplikasi Cuaca Modern</h1>", unsafe_allow_html=True)
 
-    if menu == "Lihat Produk":
-        st.header("📦 Daftar Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
+    default_city = get_location_by_ip()
+    city = st.text_input("Masukkan nama kota", default_city)
+    unit = st.selectbox("Pilih satuan suhu", ["Celsius", "Fahrenheit"])
+
+    if st.button("Lihat Cuaca"):
+        current_data, forecast_data = get_weather_data(city, unit)
+
+        if not current_data or current_data.get("cod") != 200:
+            st.error("Kota tidak ditemukan atau terjadi kesalahan pada API.")
+            return
+
+        weather = current_data['weather'][0]
+        temp = int(current_data['main']['temp'])
+        desc = weather['description'].capitalize()
+        icon = weather_icon(weather['main'])
+        temp_max = int(current_data['main']['temp_max'])
+        temp_min = int(current_data['main']['temp_min'])
+        degree_sign = "°C" if unit == "Celsius" else "°F"
+
+        anim_path = weather_animation(weather['main'])
+        if os.path.exists(anim_path):
+            with open(anim_path, "rb") as f:
+                gif_bytes = f.read()
+                encoded_gif = base64.b64encode(gif_bytes).decode()
         else:
-            st.write("Klik 'Lihat' untuk melihat gambar produk.")
-            st.divider()
+            encoded_gif = ""
 
-            if 'selected_image' not in st.session_state:
-                st.session_state.selected_image = None
-                st.session_state.selected_caption = None
+        # Cuaca saat ini
+        st.markdown(f"""
+        <div style="
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            margin: auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        ">
+            <img src="data:image/gif;base64,{encoded_gif}" style="
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                filter: brightness(0.55);
+                z-index: 1;
+            " />
+            <div style="
+                position: relative;
+                z-index: 2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                padding: 10px 20px;
+                color: white;
+                text-shadow: 0px 0px 6px rgba(0, 0, 0, 0.8);
+                font-family: Arial, sans-serif;
+            ">
+                <div style="font-size: 20px; font-weight: 500;">📍 {city.title()}</div>
+                <div style="font-size: 64px; font-weight: bold; margin-top: -10px;">{temp}{degree_sign}</div>
+                <div style="font-size: 18px; margin-top: -5px;">{desc} {icon}</div>
+                <div style="font-size: 14px; margin-top: 5px;">Tinggi: {temp_max}{degree_sign} | Rendah: {temp_min}{degree_sign}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            container = st.container()
-            with container:
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                col1.markdown("**Nama Produk**")
-                col2.markdown("**Lihat Produk**")
-                col3.markdown("**Stok**")
-                col4.markdown("**Harga**")
+        # Info tambahan
+        st.markdown("""
+        <div style='background-color:#2c70c8; border-radius:10px; padding:10px; color:white; margin-top:20px;'>
+            <strong>⚠️ Luapan Air Sungai</strong><br>
+            Australian Government Bureau of Meteorology: Luapan Air Sungai di Molonglo River.
+        </div>
+        """, unsafe_allow_html=True)
 
-                for idx, row in df.iterrows():
-                    col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-                    col1.write(row["Nama_Product"])
-                    with col2:
-                        if st.button("Lihat", key=f"lihat_{idx}"):
-                            nama_produk = row['Nama_Product']
-                            nama_file_fix = nama_produk.replace("/", "-").replace("\\", "-").strip()
-                            jpg_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.jpg")
-                            png_path = os.path.join(GAMBAR_FOLDER, f"{nama_file_fix}.png")
+        # Ramalan per jam
+        st.subheader("🌥️ Ramalan Per Jam (3 Jam Sekali)")
+        hourly_df = pd.DataFrame(forecast_data.get('list', []))
+        if not hourly_df.empty:
+            hourly_df['dt_txt'] = pd.to_datetime(hourly_df['dt_txt'])
+            next_hours = hourly_df.head(6)
 
-                            if os.path.exists(jpg_path):
-                                st.session_state.selected_image = jpg_path
-                                st.session_state.selected_caption = nama_produk
-                            elif os.path.exists(png_path):
-                                st.session_state.selected_image = png_path
-                                st.session_state.selected_caption = nama_produk
-                            else:
-                                st.session_state.selected_image = None
-                                st.session_state.selected_caption = "Gambar tidak ditemukan"
+            cols = st.columns(6)
+            for i, col in enumerate(cols):
+                hour = next_hours.iloc[i]['dt_txt'].strftime("%H:%M")
+                temp_hour = int(next_hours.iloc[i]['main']['temp'])
+                icon_hour = weather_icon(next_hours.iloc[i]['weather'][0]['main'])
+                col.markdown(f"<center>{hour}<br>{icon_hour}<br>{temp_hour}{degree_sign}</center>", unsafe_allow_html=True)
 
-                    col3.write(row["Kuantitas"])
-                    col4.write(f"Rp{int(row['Harga']):,}")
+            # Ramalan 5 hari
+            st.subheader("☁️ Ramalan 5 Hari")
+            hourly_df['date'] = hourly_df['dt_txt'].dt.date
+            daily_forecast = hourly_df.groupby('date').agg(
+                temp_min=('main', lambda x: min(item['temp_min'] for item in x)),
+                temp_max=('main', lambda x: max(item['temp_max'] for item in x)),
+                icon_desc=('weather', lambda x: x.iloc[0][0]['main'])
+            ).reset_index()
 
-            if st.session_state.selected_image:
-                with st.expander(f"📸 {st.session_state.selected_caption}", expanded=True):
-                    st.image(st.session_state.selected_image, caption=st.session_state.selected_caption, use_column_width=True)
-            elif st.session_state.selected_caption == "Gambar tidak ditemukan":
-                st.error("Gambar tidak ditemukan.")
-
-    elif menu == "Tambah Stok":
-        st.header("📥 Tambah Stok Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            stok_sekarang = df[df['Nama_Product'] == produk]['Kuantitas'].values[0]
-            st.info(f"Stok saat ini: {stok_sekarang}")
-            jumlah = st.number_input("Jumlah stok yang ingin ditambahkan", min_value=1, step=1)
-            if st.button("Tambah Stok"):
-                idx = df[df['Nama_Product'] == produk].index[0]
-                df.at[idx, 'Kuantitas'] = int(df.at[idx, 'Kuantitas']) + jumlah
-                save_data(df)
-                st.success(f"Stok produk '{produk}' berhasil ditambah sebanyak {jumlah}.")
-                st.rerun()
-
-    elif menu == "Update Harga":
-        st.header("💸 Update Harga Produk")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            harga_sekarang = df[df['Nama_Product'] == produk]['Harga'].values[0]
-            st.info(f"Harga saat ini: Rp{harga_sekarang:,}")
-            harga_baru = st.number_input("Harga baru (Rp)", min_value=0, step=1000)
-            if st.button("Update Harga"):
-                idx = df[df['Nama_Product'] == produk].index[0]
-                df.at[idx, 'Harga'] = harga_baru
-                save_data(df)
-                st.success(f"Harga produk '{produk}' berhasil diupdate ke Rp{harga_baru:,}.")
-                st.rerun()
-
-    elif menu == "Kasir":
-        st.header("🧾 Kasir")
-        df = load_data()
-        if df.empty:
-            st.warning("Belum ada produk.")
-        else:
-            produk = st.selectbox("Pilih produk", df['Nama_Product'])
-            idx = df[df['Nama_Product'] == produk].index[0]
-            stok = int(df.at[idx, 'Kuantitas'])
-            harga = int(df.at[idx, 'Harga'])
-
-            st.write(f"📦 **Stok tersedia:** {stok}")
-            st.write(f"💰 **Harga per item:** Rp{harga:,}")
-
-            if stok == 0:
-                st.warning("Stok produk ini habis, tidak bisa dibeli.")
-            else:
-                jumlah_beli = st.number_input("Jumlah beli", min_value=1, max_value=stok, step=1)
-                if st.button("Tambah ke Keranjang"):
-                    st.session_state.cart[produk] = st.session_state.cart.get(produk, 0) + jumlah_beli
-                    df.at[idx, 'Kuantitas'] = stok - jumlah_beli
-                    save_data(df)
-                    st.success(f"'{produk}' sebanyak {jumlah_beli} ditambahkan ke keranjang.")
-                    st.rerun()
-
-            if st.session_state.cart:
-                st.subheader("🛍️ Keranjang Belanja")
-                total_bayar = 0
-                for produk_keranjang, jumlah in st.session_state.cart.items():
-                    harga_item = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
-                    subtotal = harga_item * jumlah
-                    st.write(f"{produk_keranjang} x{jumlah} @ Rp{harga_item:,} = Rp{subtotal:,}")
-                    total_bayar += subtotal
-                st.write(f"**Total bayar: Rp{total_bayar:,}**")
-
-            if st.button("Reset Keranjang"):
-                df = load_data()
-                for produk_keranjang, jumlah in st.session_state.cart.items():
-                    idx = df[df['Nama_Product'] == produk_keranjang].index[0]
-                    df.at[idx, 'Kuantitas'] += jumlah  # Kembalikan stok
-                save_data(df)
-                st.session_state.cart = {}
-                st.success("Keranjang berhasil dibersihkan dan stok dikembalikan.")
-                st.rerun()
-
-    elif menu == "Lihat Struk":
-        df = load_data()
-        if not st.session_state.cart:
-            st.info("Keranjang kosong.")
-        else:
-            st.header("🧾 Struk Pembelian (Edit & Checkout)")
-            total_bayar = 0
-
-            for produk_keranjang, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
-                subtotal = harga * jumlah
-
-                st.write(f"**{produk_keranjang}**")
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    new_jumlah = st.number_input(
-                        f"Jumlah", min_value=1,
-                        max_value=int(df[df['Nama_Product'] == produk_keranjang]['Kuantitas'].values[0]) + jumlah,
-                        value=jumlah,
-                        key=f"edit_{produk_keranjang}"
-                    )
-                with col2:
-                    if st.button("Update", key=f"update_{produk_keranjang}"):
-                        stok_awal = int(df.loc[df['Nama_Product'] == produk_keranjang, 'Kuantitas'].values[0])
-                        perubahan = new_jumlah - jumlah
-                        df.loc[df['Nama_Product'] == produk_keranjang, 'Kuantitas'] = stok_awal - perubahan
-                        save_data(df)
-                        st.session_state.cart[produk_keranjang] = new_jumlah
-                        st.success(f"Jumlah '{produk_keranjang}' diperbarui menjadi {new_jumlah}.")
-                        st.rerun()
-
-                st.write(f"{jumlah} x Rp{harga:,} = Rp{subtotal:,}")
-                total_bayar += subtotal
-
-            st.write(f"**Total Bayar: Rp{total_bayar:,}**")
-
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt="Struk Pembelian Ptoirmart", ln=True, align='C')
-            pdf.ln(10)
-
-            for produk_keranjang, jumlah in st.session_state.cart.items():
-                harga = df.loc[df['Nama_Product'] == produk_keranjang, 'Harga'].values[0]
-                subtotal = harga * jumlah
-                line = f"{produk_keranjang} x{jumlah} @ Rp{harga:,} = Rp{subtotal:,}"
-                pdf.cell(200, 10, txt=line, ln=True)
-
-            pdf.ln(10)
-            pdf.set_font("Arial", "B", size=12)
-            pdf.cell(200, 10, txt=f"Total Bayar: Rp{total_bayar:,}", ln=True)
-
-            pdf_path = "struk_belanja.pdf"
-            pdf.output(pdf_path)
-
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="Checkout",
-                    data=f,
-                    file_name="struk_belanja.pdf",
-                    mime="application/pdf"
-                )
+            cols = st.columns(min(5, len(daily_forecast)))
+            for i, col in enumerate(cols):
+                day = daily_forecast.iloc[i]['date'].strftime("%a, %d %b")
+                icon_desc = daily_forecast.iloc[i]['icon_desc']
+                icon_day = weather_icon(icon_desc)
+                temp_max = int(daily_forecast.iloc[i]['temp_max'])
+                temp_min = int(daily_forecast.iloc[i]['temp_min'])
+                col.markdown(f"""
+                    <div style="text-align:center; font-family: Arial, sans-serif;">
+                        <div style="font-weight:bold;">{day}</div>
+                        <div style="font-size: 32px;">{icon_day}</div>
+                        <div style="font-size: 14px;">{temp_max}{degree_sign} / {temp_min}{degree_sign}</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
